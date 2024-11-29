@@ -1,0 +1,16 @@
+name: nlp-project
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pytorch
+  - faiss
+  - pip
+  - pip:
+      - transformers
+      - accelerate
+      - sentence-transformers
+      - scikit-learn
+      - numpy
+      - pandas
+      - tqdm
