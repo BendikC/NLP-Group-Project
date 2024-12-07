@@ -309,6 +309,114 @@ def main():
     os.makedirs(args.model_save_dir, exist_ok=True)
     train(args, model)
     
-
 if __name__ == "__main__":
     main()
+
+
+#--Functions below are the same as in original, just adapted for easier use in other scripts--#
+ 
+def run_training(
+    init_path: str,
+    pembed_path: str,
+    model_save_dir: str,
+    log_dir: str,
+    preprocess_dir: str,
+    model_gpu_index: int = 0,
+    faiss_gpu_index: list = None,
+    faiss_omp_num_threads: int = 32,
+    metric_cut: int = None,
+    neg_topk: int = 200,
+    max_seq_length: int = 64,
+    per_gpu_batch_size: int = 32,
+    gradient_accumulation_steps: int = 1,
+    warmup_steps: int = 2000,
+    seed: int = 42,
+    save_steps: int = 5000000,
+    logging_steps: int = 100,
+    learning_rate: float = 5e-6,
+    weight_decay: float = 0.01,
+    adam_epsilon: float = 1e-8,
+    max_grad_norm: float = 1.0,
+    num_train_epochs: int = 6
+):
+    """Same functionality as main() but takes arguments as parameters instead of parsing them,
+    for easier use in other scripts.
+
+    Args:
+        init_path: Path to initialize model from
+        pembed_path: Path to passage embeddings
+        model_save_dir: Directory to save model checkpoints
+        log_dir: Directory to save training logs
+        preprocess_dir: Directory containing preprocessed data
+        model_gpu_index: GPU index to use for model (default: 0)
+        faiss_gpu_index: List of GPU indices to use for FAISS (default: None)
+        faiss_omp_num_threads: Number of OpenMP threads for FAISS (default: 32)
+        metric_cut: Cut-off for evaluation metrics (default: None)
+        neg_topk: Number of negative samples to use (default: 200)
+        max_seq_length: Maximum sequence length (default: 64)
+        per_gpu_batch_size: Batch size per GPU (default: 32)
+        gradient_accumulation_steps: Number of gradient accumulation steps (default: 1)
+        warmup_steps: Number of warmup steps (default: 2000)
+        seed: Random seed (default: 42)
+        save_steps: Save checkpoint every N steps (default: 5000000)
+        logging_steps: Log metrics every N steps (default: 100)
+        learning_rate: Learning rate (default: 5e-6)
+        weight_decay: Weight decay (default: 0.01)
+        adam_epsilon: Epsilon for Adam optimizer (default: 1e-8)
+        max_grad_norm: Maximum gradient norm (default: 1.0)
+        num_train_epochs: Number of training epochs (default: 6)
+    """
+    
+    # Setup CUDA, GPU
+    model_device = torch.device(f"cuda:{model_gpu_index}")
+    n_gpu = torch.cuda.device_count()
+
+    # Setup logging
+    logger.warning("Model Device: %s, n_gpu: %s", model_device, n_gpu)
+
+    # Create args object to maintain compatibility with existing code
+    args = argparse.Namespace(
+        init_path=init_path,
+        pembed_path=pembed_path,
+        model_save_dir=model_save_dir,
+        log_dir=log_dir,
+        preprocess_dir=preprocess_dir,
+        model_gpu_index=model_gpu_index,
+        faiss_gpu_index=faiss_gpu_index if faiss_gpu_index else [],
+        faiss_omp_num_threads=faiss_omp_num_threads,
+        metric_cut=metric_cut,
+        neg_topk=neg_topk,
+        max_seq_length=max_seq_length,
+        per_gpu_batch_size=per_gpu_batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        warmup_steps=warmup_steps,
+        seed=seed,
+        save_steps=save_steps,
+        logging_steps=logging_steps,
+        learning_rate=learning_rate,
+        weight_decay=weight_decay,
+        adam_epsilon=adam_epsilon,
+        max_grad_norm=max_grad_norm,
+        num_train_epochs=num_train_epochs,
+        model_device=model_device,
+        n_gpu=n_gpu
+    )
+
+    # Set FAISS threads
+    faiss.omp_set_num_threads(faiss_omp_num_threads)
+
+    # Set seed
+    set_seed(args)
+
+    logger.info(f"load from {init_path}")
+    config = RobertaConfig.from_pretrained(init_path)
+    model = RobertaDot.from_pretrained(init_path, config=config)
+
+    model.to(model_device)
+    logger.info("Training/evaluation parameters %s", args)
+    
+    os.makedirs(model_save_dir, exist_ok=True)
+    train(args, model)
+    
+
+
