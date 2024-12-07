@@ -1,3 +1,4 @@
-data/dev.json
-data/test.json
-data/train.json
+data/
+
+*config*
+
