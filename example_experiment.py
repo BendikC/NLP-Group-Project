@@ -1,20 +1,39 @@
-"""
-Most simple (envisioned) experimental setup, for the first experiment.
-"""
-
 from pipeline_components.information_retrieval import retrieve_relevant_contexts_contriever
 from pipeline_components.generate_answer import generate_answer_with_llm
 
-###TODO Iterate over the first 1200 queries of the dev.json dataset
+import json
 
-query = "some_query"
-# Top 10 docs
-k = 10
+# Load the dataset
+with open("data/dev.json", "r") as f:
+    dataset = json.load(f)
 
-relevant_contexts = retrieve_relevant_contexts_contriever(query, k)
+# Initialize variables to keep track of accuracy
+correct_responses = 0
+total_queries = 0
 
-##TODO Combine the query with the relevant contexts in some way
+# Number of queries to iterate over
+num_queries = 1200
 
-prompt_response = generate_answer_with_llm(relevant_contexts)
+# Iterate over the first 1200 queries
+for i, query_data in enumerate(dataset[:num_queries]):
+    query = query_data["question"]
+    ground_truth = query_data["answer"]
 
-##TODO Check if this response matches up with the ground truth, and keep track of accuracy
+    # Retrieve top-k relevant contexts
+    k = 10
+    relevant_contexts = retrieve_relevant_contexts_contriever(query, k)
+
+    ## TODO Prompt engineering based off of the dexter prompts
+    # Combine query and relevant contexts into a prompt for the LLM
+    prompt = f"Question: {query}\nContext: {relevant_contexts}\nAnswer:"
+    generated_response = generate_answer_with_llm(prompt)
+
+    # Compare generated response with the ground truth
+    if generated_response.strip() == ground_truth.strip():
+        correct_responses += 1
+    
+    total_queries += 1
+
+# Calculate and print accuracy
+accuracy = correct_responses / total_queries * 100
+print(f"Accuracy: {accuracy:.2f}%")
