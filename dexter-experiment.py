@@ -47,31 +47,24 @@ def get_top_k_similar_instances(
             top_questions.append(list(data)[idx])
     return top_questions
 
-print("1")
+
 model = SentenceTransformer("sentence-transformers/paraphrase-MiniLM-L6-v2",device="cpu")
-print("2")
+
 if __name__=="__main__":
-        print("3")
         config_instance = LLMEngineOrchestrator()
-        print("4")
         llm_instance = config_instance.get_llm_engine(data="",llm_class="openai",model_name="gpt-3.5-turbo")
         #assertTrue(isinstance(llm_instance, OpenAIEngine))
         question_df = {"questions":[],"answers":[]}
-        print("5")
 
         loader = RetrieverDataset("wikimultihopqa","wiki-musiqueqa-corpus","config.ini",Split.DEV)
-        print("6")
         queries, qrels, corpus = loader.qrels()
         raw_data = loader.base_dataset.raw_data
-        print("7")
         system_prompt = "Follow the given examples and Given the question and context output final answer for the question using information in the context and give answer in form of  [Final Answer]: \n"
         matches = 0
         mismatches = 0
         ids = []
         evidences = []
         for index,row in enumerate(raw_data):
-                print("8")
-
                 if row.question.id() in ids and index+1<len(raw_data) and row.question.id() ==  raw_data[index+1].question.id():
                         print(row.question.id(),row.evidences.text(),row.answer)
                         evidences.append(row.evidences.text())
