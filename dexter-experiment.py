@@ -2,6 +2,16 @@ import json
 import pandas as pd
 
 import os
+from dotenv import load_dotenv
+# Important! environment variables need to be set up at the top of the file before LLMEngineOrchestrator is imported
+load_dotenv()
+
+# Make sure the environment variables are set correctly
+if not os.getenv("huggingface_token"):
+    print("huggingface_token not found in environment variables")
+if not os.getenv("OPENAI_KEY"):
+    print("OPENAI_KEY not found in environment variables")
+
 os.environ["huggingface_token"] = os.getenv("huggingface_token")
 os.environ["OPENAI_KEY"] = os.getenv("OPENAI_KEY")
 
@@ -16,6 +26,7 @@ from dexter.data.loaders.RetrieverDataset import RetrieverDataset
 
 from torch import Tensor
 from typing import List,Dict
+
 
 def get_top_k_similar_instances(
     sentence: str, data_emb: Tensor, data: List[Dict],

@@ -93,7 +93,6 @@ def load_index(passage_embeddings,  faiss_gpu_index):
             index = faiss.index_cpu_to_gpu(res, faiss_gpu_index, index, co)
         else:
             global gpu_resources
-            import torch
             for i in range(torch.cuda.device_count()):
                 res = faiss.StandardGpuResources()
                 res.setTempMemory(128*1024*1024)
