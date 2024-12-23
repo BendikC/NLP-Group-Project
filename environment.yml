@@ -11,8 +11,9 @@ dependencies:
       - accelerate
       - sentence-transformers
       - scikit-learn
-      - numpy
+      - numpy<2.0
       - pandas
       - tqdm
       - tensorboard
-      - huggingface_hub==21.0
+      - huggingface_hub==0.21.0
+      - dexter-cqa
