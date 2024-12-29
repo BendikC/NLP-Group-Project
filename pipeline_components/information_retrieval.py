@@ -41,7 +41,7 @@ class Retriever:
             self.queries, self.qrels, self.corpus = dataset.qrels()
 
         # Convert corpus to a mapping from indices to documents for easy retrieval
-        self.corpus_mapping = {doc.id: doc.text for doc in self.corpus}
+        self.corpus_mapping = {doc.id(): doc.text() for doc in self.corpus}
     
     def retrieve_relevant_contexts_contriever(self, queries: List[Question], k: int) -> dict[str, List[str]]:
         """
