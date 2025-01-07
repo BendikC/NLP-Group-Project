@@ -41,7 +41,7 @@ class AnswerGenerator:
         """
         Initializes instances for all configured models.
         """
-        for model_config in self.short_context_models + self.medium_context_models:
+        for model_config in self.short_context_models + self.medium_context_models + self.long_context_models:
             model_name = model_config["name"]
             print(f"Loading model: {model_name}...")
             
@@ -95,9 +95,11 @@ class AnswerGenerator:
         """
         if context_length <= 5000:
             candidates = self.short_context_models
-        else:
+        elif context_length <= 25000:
             candidates = self.medium_context_models
-        #TODO: add long context when available
+        else:
+            candidates = self.long_context_models
+        
 
         # Evaluate all candidates and select the best based on hallucination index
         # Simple version, looking for better ways to do it
