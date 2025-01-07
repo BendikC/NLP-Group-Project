@@ -41,12 +41,13 @@ class AnswerGenerator:
         """
         Initializes instances for all configured models.
         """
+        # Use LLMEngineOrchestrator for initialization
+        config_instance = LLMEngineOrchestrator()
+            
         for model_config in self.short_context_models + self.medium_context_models + self.long_context_models:
             model_name = model_config["name"]
             print(f"Loading model: {model_name}...")
             
-            # Use LLMEngineOrchestrator for initialization
-            config_instance = LLMEngineOrchestrator()
             llm_instance = config_instance.get_llm_engine(
                 data="",
                 llm_class="llama",  # Adjust based on the engine used
