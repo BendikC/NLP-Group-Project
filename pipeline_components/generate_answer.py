@@ -1,5 +1,4 @@
-import torch
-from transformers import AutoTokenizer, pipeline
+from dexter.llms.llm_engine_orchestrator import LLMEngineOrchestrator
 
 
 class AnswerGenerator:
@@ -26,35 +25,44 @@ class AnswerGenerator:
         """
         # Define LLM configurations for short and medium contexts
         self.short_context_models = [
-            {"name": "meta-llama/LLaMA-3-70b-chat", "max_tokens": 5000},
-            {"name": "meta-llama/LLaMA-3.1", "max_tokens": 5000},
-            {"name": "qwen/Qwen2-72B-Instruct", "max_tokens": 5000},
+            {"name": "meta-llama/Llama-3.1-405B-Instruct", "max_tokens": 5000},
         ]
         self.medium_context_models = [
-            {"name": "qwen/Qwen1.5-32B-Chat", "max_tokens": 25000},
-            {"name": "qwen/Qwen2-72B-Instruct", "max_tokens": 25000},
+            {"name": "meta-llama/Llama-3.1-8B-Instruct", "max_tokens": 25000},
         ]
-        
-        #TODO: find open source llms for long context
+        self.long_context_models = [
+            {"name": "starsy/Llama-3-70B-Instruct-Gradient-262k-AWQ", "max_tokens": 200000},
+        ]
 
         self.models = {}  # Dictionary to store initialized pipelines
         self.initialize_models()
 
     def initialize_models(self):
         """
-        Initializes pipelines for all configured models.
+        Initializes instances for all configured models.
         """
         for model_config in self.short_context_models + self.medium_context_models:
             model_name = model_config["name"]
             print(f"Loading model: {model_name}...")
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self.models[model_name] = pipeline(
-                "text-generation",
-                model=model_name,
-                tokenizer=tokenizer,
-                device_map="auto",
-                torch_dtype=torch.float16,
+            
+            # Use LLMEngineOrchestrator for initialization
+            config_instance = LLMEngineOrchestrator()
+            llm_instance = config_instance.get_llm_engine(
+                data="",
+                llm_class="llama",  # Adjust based on the engine used
+                model_name=model_name,
             )
+            self.models[model_name] = llm_instance
+            
+            # Prev version to test if the orchestrator from dexter doesn't work
+            # tokenizer = AutoTokenizer.from_pretrained(model_name)
+            # self.models[model_name] = pipeline(
+            #     "text-generation",
+            #     model=model_name,
+            #     tokenizer=tokenizer,
+            #     device_map="auto",
+            #     torch_dtype=torch.float16,
+            # )
 
     def evaluate_model(self, model_name, prompt: str, hallucination_index_threshold: float = 0.1) -> float:
         """
@@ -116,20 +124,51 @@ class AnswerGenerator:
         Returns:
             str: The generated answer from the selected LLM.
         """
+        # Add system and user prompts for better guidance
+        system_prompt = (
+            "Follow the given examples and, based on the context provided, "
+            "output the final answer to the question using the information in the context. "
+            "Respond in the form: [Final Answer]: \n"
+        )
+        user_prompt = (
+            "[Question]: When does monsoon season end in the state the area code 575 is located?\n"
+            "[Final Answer]: mid-September.\n"
+            "[Question]: What is the current official currency in the country where Ineabelle Diaz is a citizen?\n"
+            "[Final Answer]: United States dollar.\n"
+            "[Question]: Where was the person who founded the American Institute of Public Opinion in 1935 born?\n"
+            "[Final Answer]: Jefferson.\n\n"
+            f"Follow the above examples, and given the context below, "
+            f"answer the question:\n\nContext: {prompt_with_context}\n"
+        )
+        
         best_model_name = self.select_best_model(context_length, prompt_with_context)
-        pipeline = self.models[best_model_name]
+        llm_instance = self.models[best_model_name]
 
         try:
-            response = pipeline(
-                prompt_with_context,
-                max_new_tokens=256,
-                do_sample=True,
-                temperature=0.7,
-                top_k=50,
-                top_p=0.95,
-            )
-            return response[0]["generated_text"]
+            # Generate the answer using the selected model
+            response = llm_instance.get_chat_completion(user_prompt, system_prompt)
+            if "not possible" in response.lower() or "unknown" in response.lower():
+                return "[Final Answer]: Unable to provide an answer with the given context."
+            elif "[Final Answer]:" in response:
+                return response.split("[Final Answer]:", 1)[1].strip()
+            else:
+                return "[Final Answer]: Could not parse a valid answer."
         except Exception as e:
             print(f"Error generating answer with model {best_model_name}: {e}")
-            return "An error occurred while generating the answer."
+            return "[Final Answer]: An error occurred while generating the answer."
+    
+        # Prev version to try if dexter doesn't work
+        # try:
+        #     response = pipeline(
+        #         prompt_with_context,
+        #         max_new_tokens=256,
+        #         do_sample=True,
+        #         temperature=0.7,
+        #         top_k=50,
+        #         top_p=0.95,
+        #     )
+        #     return response[0]["generated_text"]
+        # except Exception as e:
+        #     print(f"Error generating answer with model {best_model_name}: {e}")
+        #     return "An error occurred while generating the answer."
         
