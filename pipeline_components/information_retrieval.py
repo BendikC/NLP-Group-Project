@@ -143,15 +143,17 @@ class Retriever:
         return query_to_oracle_contexts
 
 
-    def retrieve_random_contexts(self, k: int) -> str:
+    def retrieve_random_contexts(self, queries: List[Question], k: int, top_k: int) -> dict[str, List[str]]:
         """
-        Randomly sample k contexts. 
+        Randomly sample k contexts that are NOT relevant. 
 
         Args:
             k (int): Amount of random documents to return
+            queries (List[Question]: List of input queries as Question objects.
+            top_k (int): Amount of relevant docs.
 
         Returns:
-            str?: K random documents from the dataset
+            Dict[str, List[str]]: A dictionary mapping query IDs to k irrelevant documents in order of relevance.
         """
         if k <= 0:
             raise ValueError("The number of random contexts to retrieve must be a positive integer.")
@@ -159,12 +161,47 @@ class Retriever:
         # Ensure k does not exceed the size of the corpus
         if k > len(self.corpus_mapping):
             raise ValueError(f"The number of requested contexts exceeds the corpus size ({len(self.corpus_mapping)}).")
-
-        # Randomly sample k document IDs from the corpus mapping keys. This will be another set every time the function is called 
-        # because the seed for np.random.choice changes based on the system clock.
-        random_doc_ids = np.random.choice(list(self.corpus_mapping.keys()), size=k, replace=False)
         
-        # Map the sampled document IDs to their respective text content
-        random_contexts = [self.corpus_mapping[doc_id] for doc_id in random_doc_ids if doc_id in self.corpus_mapping]
+        # Initialize retriever
+        retriever = Contriever(DenseHyperParams(
+            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
+            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
+        ))
+
+        # Perform retrieval for the query
+        retrieval_results = retriever.retrieve(
+            corpus=self.corpus,
+            queries=queries,
+            top_k=top_k,
+            score_function=CosineSimilarity(),
+            return_sorted=True
+        )
+        
+        # Create the not_relevant_mapping
+        not_relevant_mapping = {}
+        for query in queries:
+            query_id = str(query.id())  # Ensure question ID is in string format
+
+            # Get the relevant document IDs for the query
+            relevant_doc_ids = set(retrieval_results[query_id].keys())
+
+            # Identify non-relevant document IDs
+            non_relevant_doc_ids = set(self.corpus_mapping.keys()) - relevant_doc_ids
+
+            # Map the non-relevant document IDs to their text content
+            not_relevant_mapping[query_id] = [
+                self.corpus_mapping[doc_id]
+                for doc_id in non_relevant_doc_ids if doc_id in self.corpus_mapping
+            ]
+
+        # Randomly sample k document IDs from the non-relevant documents for each query
+        random_contexts = {}
+        for query_id, non_relevant_docs in not_relevant_mapping.items():
+            if len(non_relevant_docs) < k:
+                raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
+            
+            random_docs = np.random.choice(non_relevant_docs, size=k, replace=False)
+            random_contexts[query_id] = random_docs.tolist()
 
         return random_contexts
+    
