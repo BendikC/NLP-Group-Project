@@ -153,4 +153,18 @@ class Retriever:
         Returns:
             str?: K random documents from the dataset
         """
-        pass
+        if k <= 0:
+            raise ValueError("The number of random contexts to retrieve must be a positive integer.")
+
+        # Ensure k does not exceed the size of the corpus
+        if k > len(self.corpus_mapping):
+            raise ValueError(f"The number of requested contexts exceeds the corpus size ({len(self.corpus_mapping)}).")
+
+        # Randomly sample k document IDs from the corpus mapping keys. This will be another set every time the function is called 
+        # because the seed for np.random.choice changes based on the system clock.
+        random_doc_ids = np.random.choice(list(self.corpus_mapping.keys()), size=k, replace=False)
+        
+        # Map the sampled document IDs to their respective text content
+        random_contexts = [self.corpus_mapping[doc_id] for doc_id in random_doc_ids if doc_id in self.corpus_mapping]
+
+        return random_contexts
