@@ -141,8 +141,6 @@ class Retriever:
             # Take the top-k non-oracle documents
             hard_negatives[query_id] = non_oracle_docs[:k]
 
-        print(hard_negatives)
-
         return hard_negatives
 
 
