@@ -1,5 +1,6 @@
 from dexter.llms.llm_engine_orchestrator import LLMEngineOrchestrator
-
+from transformers import AutoTokenizer, pipeline
+import torch
 
 class AnswerGenerator:
     """
@@ -19,7 +20,7 @@ class AnswerGenerator:
     response = answer_generator.generate_answer_with_llm(len(short_prompt.split()), short_prompt)
     """
 
-    def __init__(self):
+    def __init__(self, tiny_version: bool = False):
         """
         Initializes the LLMs and their configurations for short and medium contexts.
         """
@@ -33,18 +34,23 @@ class AnswerGenerator:
         self.long_context_models = [
             {"name": "starsy/Llama-3-70B-Instruct-Gradient-262k-AWQ", "max_tokens": 200000},
         ]
+        self.tiny_context_models = [
+            {"name": "meta-llama/Llama-3.2-1B", "max_tokens": 1000},
+        ]
 
         self.models = {}  # Dictionary to store initialized pipelines
-        self.initialize_models()
+        self.initialize_models(tiny_version=tiny_version)
 
-    def initialize_models(self):
+    def initialize_models(self, tiny_version: bool = False):
         """
         Initializes instances for all configured models.
         """
         # Use LLMEngineOrchestrator for initialization
         config_instance = LLMEngineOrchestrator()
             
-        for model_config in self.short_context_models + self.medium_context_models + self.long_context_models:
+        models = self.tiny_context_models if tiny_version else self.short_context_models + self.medium_context_models + self.long_context_models
+        
+        for model_config in models:
             model_name = model_config["name"]
             print(f"Loading model: {model_name}...")
             
@@ -55,7 +61,7 @@ class AnswerGenerator:
             )
             self.models[model_name] = llm_instance
             
-            # Prev version to test if the orchestrator from dexter doesn't work
+            #Prev version to test if the orchestrator from dexter doesn't work
             # tokenizer = AutoTokenizer.from_pretrained(model_name)
             # self.models[model_name] = pipeline(
             #     "text-generation",
