@@ -65,7 +65,7 @@ class AnswerGenerator:
             #     torch_dtype=torch.float16,
             # )
 
-    def evaluate_model(self, model_name, prompt: str, hallucination_index_threshold: float = 0.1) -> float:
+    def evaluate_model(self, model_name, query: str, context: str, hallucination_index_threshold: float = 0.1) -> float:
         """
         Evaluates the model's output based on a hallucination index.
         In this example, the hallucination index is simulated for demonstration.
@@ -83,13 +83,14 @@ class AnswerGenerator:
         hallucination_index = 0.05  # Simulate low hallucination index for now
         return hallucination_index
 
-    def select_best_model(self, context_length: int, prompt: str) -> str:
+    def select_best_model(self, context_length: int, query: str, context: str) -> str:
         """
         Selects the best model based on the context length and hallucination index.
 
         Args:
             context_length (int): Length of the input context in tokens.
-            prompt (str): The input prompt.
+            query (str): The input question or query.
+            context (str): The context or passages containing relevant information.
 
         Returns:
             str: The name of the best model for the given context and prompt.
@@ -108,7 +109,7 @@ class AnswerGenerator:
         best_score = float("inf")
         for model_config in candidates:
             model_name = model_config["name"]
-            hallucination_index = self.evaluate_model(model_name, prompt)
+            hallucination_index = self.evaluate_model(model_name, query, context)
             if hallucination_index < best_score:
                 best_model = model_name
                 best_score = hallucination_index
@@ -116,13 +117,14 @@ class AnswerGenerator:
         print(f"Selected best model: {best_model} with hallucination index: {best_score}")
         return best_model
 
-    def generate_answer_with_llm(self, context_length: int, prompt_with_context: str) -> str:
+    def generate_answer_with_llm(self, context_length: int, query: str, context: str) -> str:
         """
         Generates an answer using the best LLM for the given context.
 
         Args:
             context_length (int): Length of the input context in tokens.
-            prompt_with_context (str): The input prompt containing the question and any relevant context.
+            query (str): The input question or query.
+            context (str): The context or passages containing relevant information.
 
         Returns:
             str: The generated answer from the selected LLM.
@@ -141,10 +143,10 @@ class AnswerGenerator:
             "[Question]: Where was the person who founded the American Institute of Public Opinion in 1935 born?\n"
             "[Final Answer]: Jefferson.\n\n"
             f"Follow the above examples, and given the context below, "
-            f"answer the question:\n\nContext: {prompt_with_context}\n"
+            f"answer the question:\n [Question]: {query}\n [Context]: {context}\n"
         )
         
-        best_model_name = self.select_best_model(context_length, prompt_with_context)
+        best_model_name = self.select_best_model(context_length, query, context)
         llm_instance = self.models[best_model_name]
 
         try:

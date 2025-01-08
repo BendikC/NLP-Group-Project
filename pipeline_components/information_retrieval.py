@@ -39,6 +39,7 @@ class Retriever:
 
             # Load corpus
             self.queries, self.qrels, self.corpus = dataset.qrels()
+            self.base_dataset = dataset.base_dataset
 
         # Convert corpus to a mapping from indices to documents for easy retrieval
         self.corpus_mapping = {doc.id(): doc.text() for doc in self.corpus}
