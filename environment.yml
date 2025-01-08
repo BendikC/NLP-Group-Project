@@ -20,3 +20,5 @@ dependencies:
     - numpy
     - dexter-cqa
     - python-dotenv
+    - matplotlib
+    - nltk
