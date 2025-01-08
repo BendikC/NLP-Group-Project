@@ -35,7 +35,7 @@ class AnswerGenerator:
             {"name": "starsy/Llama-3-70B-Instruct-Gradient-262k-AWQ", "max_tokens": 200000},
         ]
         self.tiny_context_models = [
-            {"name": "meta-llama/Llama-3.2-1B", "max_tokens": 1000},
+            {"name": "meta-llama/Llama-2-7b-chat-hf", "max_tokens": 1000},
         ]
 
         self.models = {}  # Dictionary to store initialized pipelines
