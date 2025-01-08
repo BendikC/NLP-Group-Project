@@ -47,12 +47,8 @@ if __name__=="__main__":
                 question_df["answers"].append(final_answer)
                 question_df["correct_answers"].append(answer.text())
 
-                if len(final_answer.split("[Final Answer]:")) >1:
-                        final_answer = final_answer.split("[Final Answer]:")[1]
-                        if answer.text().strip().lower() in final_answer.strip().lower():
-                                matches += 1
-                        else:
-                                mismatches += 1
+                if "[Final Answer]:" not in final_answer and answer.text().strip().lower() in final_answer.strip().lower():
+                        matches += 1
                 else:
                         mismatches += 1
                 
