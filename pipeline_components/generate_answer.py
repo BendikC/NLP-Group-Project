@@ -101,7 +101,9 @@ class AnswerGenerator:
         Returns:
             str: The name of the best model for the given context and prompt.
         """
-        if context_length <= 5000:
+        if context_length <= 1000:
+            candidates = self.tiny_context_models
+        elif context_length <= 5000:
             candidates = self.short_context_models
         elif context_length <= 25000:
             candidates = self.medium_context_models
@@ -157,7 +159,7 @@ class AnswerGenerator:
 
         try:
             # Generate the answer using the selected model
-            response = llm_instance.get_chat_completion(user_prompt, system_prompt)
+            response = llm_instance.get_llama_completion(user_prompt, system_prompt)
             if "not possible" in response.lower() or "unknown" in response.lower():
                 return "[Final Answer]: Unable to provide an answer with the given context."
             elif "[Final Answer]:" in response:
