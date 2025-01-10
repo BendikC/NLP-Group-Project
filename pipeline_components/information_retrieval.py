@@ -44,6 +44,9 @@ class Retriever:
 
         # Convert corpus to a mapping from indices to documents for easy retrieval
         self.corpus_mapping = {doc.id(): doc.text() for doc in self.corpus}
+
+        # Initialize retriever for caching
+        self.retriever = None
     
     def retrieve_relevant_contexts_contriever(self, queries: List[Question], k: int) -> dict[str, List[str]]:
         """
@@ -63,14 +66,15 @@ class Retriever:
         if k <= 0:
             raise ValueError("The number of top-k documents must be a positive integer.")
         
-        # Initialize retriever
-        retriever = Contriever(DenseHyperParams(
-            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
-            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
-        ))
+        # Initialize retriever if not cached yet
+        if self.retriever == None:
+            self.retriever = Contriever(DenseHyperParams(
+                query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
+                document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
+            ))
 
         # Perform retrieval for the query
-        retrieval_results = retriever.retrieve(
+        retrieval_results = self.retriever.retrieve(
             corpus=self.corpus,
             queries=queries,
             top_k=k,
