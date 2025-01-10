@@ -26,16 +26,10 @@ class AnswerGenerator:
         """
         # Define LLM configurations for short and medium contexts
         self.short_context_models = [
-            {"name": "meta-llama/Llama-3.1-405B-Instruct", "max_tokens": 5000},
+            {"name": "gpt-4o-mini", "max_tokens": 5000},
         ]
         self.medium_context_models = [
-            {"name": "meta-llama/Llama-3.1-8B-Instruct", "max_tokens": 25000},
-        ]
-        self.long_context_models = [
-            {"name": "starsy/Llama-3-70B-Instruct-Gradient-262k-AWQ", "max_tokens": 200000},
-        ]
-        self.tiny_context_models = [
-            {"name": "meta-llama/Llama-2-7b-chat-hf", "max_tokens": 1000},
+            {"name": "gpt-4o", "max_tokens": 10000},
         ]
 
         self.models = {}  # Dictionary to store initialized pipelines
@@ -48,7 +42,7 @@ class AnswerGenerator:
         # Use LLMEngineOrchestrator for initialization
         config_instance = LLMEngineOrchestrator()
             
-        models = self.tiny_context_models if tiny_version else self.short_context_models + self.medium_context_models + self.long_context_models
+        models = self.short_context_models + self.medium_context_models
         
         for model_config in models:
             model_name = model_config["name"]
@@ -56,7 +50,7 @@ class AnswerGenerator:
             
             llm_instance = config_instance.get_llm_engine(
                 data="",
-                llm_class="llama",  # Adjust based on the engine used
+                llm_class="openai",  # Adjust based on the engine used
                 model_name=model_name,
             )
             self.models[model_name] = llm_instance
@@ -101,14 +95,10 @@ class AnswerGenerator:
         Returns:
             str: The name of the best model for the given context and prompt.
         """
-        if context_length <= 1000:
-            candidates = self.tiny_context_models
-        elif context_length <= 5000:
+        if context_length <= 5000:
             candidates = self.short_context_models
-        elif context_length <= 25000:
-            candidates = self.medium_context_models
         else:
-            candidates = self.long_context_models
+            candidates = self.medium_context_models
         
 
         # Evaluate all candidates and select the best based on hallucination index
@@ -159,7 +149,7 @@ class AnswerGenerator:
 
         try:
             # Generate the answer using the selected model
-            response = llm_instance.get_llama_completion(user_prompt, system_prompt)
+            response = llm_instance.get_chat_completion(user_prompt, system_prompt)
             if "not possible" in response.lower() or "unknown" in response.lower():
                 return "[Final Answer]: Unable to provide an answer with the given context."
             elif "[Final Answer]:" in response:
