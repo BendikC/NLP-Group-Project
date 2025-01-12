@@ -53,9 +53,9 @@ if __name__=="__main__":
                 else:
                         mismatches += 1
                 
-                final_questions = pd.DataFrame(question_df)
-                print("EM", matches/(matches+mismatches))
-                final_questions.to_csv("final_questions.csv")
+        final_questions = pd.DataFrame(question_df)
+        print("EM", matches/(matches+mismatches))
+        final_questions.to_csv("final_questions.csv")
                 
 
         
