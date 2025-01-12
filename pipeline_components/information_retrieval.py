@@ -210,46 +210,36 @@ class Retriever:
         if k > len(self.corpus_mapping):
             raise ValueError(f"The number of requested contexts exceeds the corpus size ({len(self.corpus_mapping)}).")
         
-        # Initialize retriever
-        retriever = Contriever(DenseHyperParams(
-            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
-            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
-        ))
-
-        # Perform retrieval for the query
-        retrieval_results = retriever.retrieve(
-            corpus=self.corpus,
-            queries=queries,
-            top_k=top_k,
-            score_function=CosineSimilarity(),
-            return_sorted=True
-        )
+        # Retrieve relevant contexts
+        relevant_contexts = self.retrieve_relevant_contexts_contriever(queries, top_k)
+        
+        # Retrieve oracle contexts
+        oracle_contexts = self.retrieve_oracle_contexts(queries, top_k)
         
         # Create the not_relevant_mapping
         not_relevant_mapping = {}
+        
         for query in queries:
             query_id = str(query.id())  # Ensure question ID is in string format
 
-            # Get the relevant document IDs for the query
-            relevant_doc_ids = set(retrieval_results[query_id].keys())
-
-            # Identify non-relevant document IDs
-            non_relevant_doc_ids = set(self.corpus_mapping.keys()) - relevant_doc_ids
-
-            # Map the non-relevant document IDs to their text content
-            not_relevant_mapping[query_id] = [
-                self.corpus_mapping[doc_id]
-                for doc_id in non_relevant_doc_ids if doc_id in self.corpus_mapping
-            ]
-
-        # Randomly sample k document IDs from the non-relevant documents for each query
-        random_contexts = {}
-        for query_id, non_relevant_docs in not_relevant_mapping.items():
-            if len(non_relevant_docs) < k:
-                raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
+            # Get relevant and oracle contexts for the query
+            relevant_docs = set(relevant_contexts.get(query_id, []))
+            oracle_docs = set(oracle_contexts.get(query_id, []))
             
-            random_docs = np.random.choice(non_relevant_docs, size=k, replace=False)
-            random_contexts[query_id] = random_docs.tolist()
+            # Combine relevant and oracle contexts
+            excluded_docs = relevant_docs.union(oracle_docs)
 
-        return random_contexts
+            # Identify remaining documents that can be sampled
+            remaining_docs = [
+                doc for doc_id, doc in self.corpus_mapping.items() if doc_id not in excluded_docs
+            ]
+            
+            if len(remaining_docs) < k:
+                raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
+        
+            # Randomly sample k documents from the remaining pool
+            sampled_docs = np.random.choice(remaining_docs, size=k, replace=False)
+            not_relevant_mapping[query_id] = sampled_docs.tolist()
+
+        return not_relevant_mapping
     
