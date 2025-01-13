@@ -1,6 +1,10 @@
 import json
 import pandas as pd
 
+## import dotenv and load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 os.environ["huggingface_token"] = os.getenv("huggingface_token")
 os.environ["OPENAI_KEY"] = os.getenv("OPENAI_KEY")
@@ -32,6 +36,7 @@ if __name__=="__main__":
 
         matches = 0
         mismatches = 0
+        current_query_id = None
 
         for sample in tqdm(base_dataset.raw_data, desc="Processing samples"):
                 query = sample.question
@@ -40,6 +45,13 @@ if __name__=="__main__":
                 query_id = query.id()
                 query_text = query.text()
                 relevant_contexts = top_k_per_question[query_id]
+
+                # Because dexter package is garbage, they defined a sample in the raw data per evidence and not per query, so we have 10 samples per query
+                # containing not only new evidence for each one, but the same question and answer 10 times :(
+                if current_query_id == query_id:
+                        continue
+                else:
+                        current_query_id = query_id
 
                 prompt_context = "".join(relevant_contexts)
                 final_answer = answer_generator.generate_answer_with_llm(len(prompt_context), query_text, prompt_context)

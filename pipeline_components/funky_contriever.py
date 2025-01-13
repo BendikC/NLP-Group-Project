@@ -38,7 +38,7 @@ class FunkyContriever(HfRetriever):
                                     shape=(meta['total_number'], meta['embedding_size']))
                                     
         # Convert numpy memmap to torch tensor since retrieve() expects tensor
-        corpus_embeddings = torch.from_numpy(corpus_embeddings).cuda()
+        corpus_embeddings = torch.from_numpy(corpus_embeddings).cuda() if torch.cuda.is_available() else torch.from_numpy(corpus_embeddings).to('cpu')
                                     
         return corpus_embeddings, True
 
