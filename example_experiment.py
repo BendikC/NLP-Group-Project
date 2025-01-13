@@ -29,7 +29,7 @@ if __name__=="__main__":
         queries = retriever.queries
         base_dataset = retriever.base_dataset
 
-        answer_generator = AnswerGenerator(tiny_version=True)
+        answer_generator = AnswerGenerator(no_print=True)
 
         # retrieve a dictionary of top k relevant contexts per question
         top_k_per_question = retriever.retrieve_relevant_contexts_contriever(queries, TOP_K)

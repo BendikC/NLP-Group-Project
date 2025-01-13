@@ -20,7 +20,7 @@ class AnswerGenerator:
     response = answer_generator.generate_answer_with_llm(len(short_prompt.split()), short_prompt)
     """
 
-    def __init__(self, tiny_version: bool = False):
+    def __init__(self, no_print: bool = False):
         """
         Initializes the LLMs and their configurations for short and medium contexts.
         """
@@ -33,9 +33,10 @@ class AnswerGenerator:
         ]
 
         self.models = {}  # Dictionary to store initialized pipelines
-        self.initialize_models(tiny_version=tiny_version)
+        self.no_print = no_print
+        self.initialize_models()
 
-    def initialize_models(self, tiny_version: bool = False):
+    def initialize_models(self):
         """
         Initializes instances for all configured models.
         """
@@ -46,7 +47,7 @@ class AnswerGenerator:
         
         for model_config in models:
             model_name = model_config["name"]
-            print(f"Loading model: {model_name}...")
+            print(f"Loading model: {model_name}...") if not self.no_print else None
             
             llm_instance = config_instance.get_llm_engine(
                 data="",
@@ -79,7 +80,7 @@ class AnswerGenerator:
             float: Simulated hallucination index (lower is better).
         """
         #TODO: Simulated evaluation logic; replace with actual metrics if available
-        print(f"Evaluating model {model_name} for hallucination...")
+        print(f"Evaluating model {model_name} for hallucination...") if not self.no_print else None
         hallucination_index = 0.05  # Simulate low hallucination index for now
         return hallucination_index
 
@@ -112,7 +113,7 @@ class AnswerGenerator:
                 best_model = model_name
                 best_score = hallucination_index
 
-        print(f"Selected best model: {best_model} with hallucination index: {best_score}")
+        print(f"Selected best model: {best_model} with hallucination index: {best_score}") if not self.no_print else None
         return best_model
 
     def generate_answer_with_llm(self, context_length: int, query: str, context: str) -> str:
