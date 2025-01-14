@@ -8,6 +8,8 @@ from corpus_management.encode_corpus import encode_corpus
 from dexter.data.datastructures.question import Question
 from dexter.utils.metrics.SimilarityMatch import SimilarityMetric
 from typing import Dict, List
+from corpus_management.load_corpus import load_encoded_corpus
+
 class FunkyContriever(HfRetriever):
     def __init__(self, config=None):
         super().__init__(config)
@@ -20,28 +22,9 @@ class FunkyContriever(HfRetriever):
         Returns:
             Tuple[corpus_embeddings, index_present]
         """
-        # Load memmap file containing embeddings
-        print("Loading memmap file containing embeddings")
-        memmap_path = os.path.join("data/embeddings", "corpus.memmap")
-        if not os.path.exists(memmap_path):
-            return None, False
-            
-        # Load metadata to get shape information
-        meta_path = os.path.join("data/embeddings", "corpus_meta")
-        with open(meta_path, 'r') as f:
-            meta = eval(f.read())
-            
-        # Create memmap array with correct shape
-        corpus_embeddings = np.memmap(memmap_path, 
-                                    dtype=np.float32,
-                                    mode='r',
-                                    shape=(meta['total_number'], meta['embedding_size']))
-                                    
-        # Convert numpy memmap to torch tensor since retrieve() expects tensor
-        corpus_embeddings = torch.from_numpy(corpus_embeddings).cuda() if torch.cuda.is_available() else torch.from_numpy(corpus_embeddings).to('cpu')
-                                    
-        return corpus_embeddings, True
-
+        return load_encoded_corpus()
+    
+    
     def retrieve(self, 
                corpus: List[Evidence], 
                queries: List[Question], 

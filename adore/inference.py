@@ -1,5 +1,4 @@
 import sys
-sys.path += ["./"]
 import os
 import torch
 import faiss
@@ -10,9 +9,9 @@ import numpy as np
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from transformers import RobertaConfig
-from model import RobertaDot
-from dataset import TextTokenIdsCache, SequenceDataset, get_collate_function
-from retrieve_utils import (
+from adore.model import RobertaDot
+from adore.dataset import TextTokenIdsCache, SequenceDataset, get_collate_function
+from adore.retrieve_utils import (
     construct_flatindex_from_embeddings, 
     index_retrieve, convert_index_to_gpu
 )

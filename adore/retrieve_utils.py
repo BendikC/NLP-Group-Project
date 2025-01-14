@@ -1,5 +1,4 @@
 import sys
-sys.path += ['./']
 import os
 import faiss
 import numpy as np

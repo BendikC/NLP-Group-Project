@@ -1,5 +1,4 @@
 import sys
-sys.path += ["./"]
 import os
 import time
 import torch
@@ -14,9 +13,10 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, RandomSampler
 from transformers import (AdamW, get_linear_schedule_with_warmup)
 
-from dataset import TextTokenIdsCache, SequenceDataset, load_rel, pack_tensor_2D
-from dexter.retriever.dense.Contriever import Contriever
-from dexter.data.datastructures.hyperparameters.dpr import DenseHyperParams
+from adore.dataset import TextTokenIdsCache, SequenceDataset, load_rel, pack_tensor_2D
+
+
+from corpus_management.load_corpus import load_encoded_corpus
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format = '%(asctime)s-%(levelname)s-%(name)s- %(message)s',
@@ -114,9 +114,7 @@ def load_index(passage_embeddings,  faiss_gpu_index):
 def train(args, model):
     """ Train the model """
     tb_writer = SummaryWriter(os.path.join(args.log_dir, 
-        time.strftime("%b-%d_%H:%M:%S", time.localtime())))
-    passage_embeddings = np.memmap(args.pembed_path, dtype=np.float32, mode="r"
-        ).reshape(-1, model.output_embedding_size)
+        time.strftime("%b-%d_%H-%M-%S", time.localtime())))
 
     args.train_batch_size = args.per_gpu_batch_size
     train_dataset = TrainQueryDataset(
@@ -141,7 +139,7 @@ def train(args, model):
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
         num_training_steps=t_total)
 
-    index = load_index(passage_embeddings, args.faiss_gpu_index)
+    index = load_encoded_corpus()
 
     # Train!
     logger.info("***** Running training *****")
@@ -285,48 +283,48 @@ def run_parse_args():
     return args
 
 
-def main():
-    args = run_parse_args()
-    # Setup CUDA, GPU 
-    args.model_device = torch.device(f"cuda:{args.model_gpu_index}")
-    args.n_gpu = torch.cuda.device_count()
+# def main():
+#     args = run_parse_args()
+#     # Setup CUDA, GPU 
+#     args.model_device = torch.device(f"cuda:{args.model_gpu_index}")
+#     args.n_gpu = torch.cuda.device_count()
 
-    # Setup logging
-    logger.warning("Model Device: %s, n_gpu: %s", args.model_device, args.n_gpu)
+#     # Setup logging
+#     logger.warning("Model Device: %s, n_gpu: %s", args.model_device, args.n_gpu)
 
-    # Set seed
-    set_seed(args)
+#     # Set seed
+#     set_seed(args)
 
-    # Initialize Contriever model
-    model = Contriever(DenseHyperParams)
+#     # Initialize Contriever model
+#     model = Contriever(DenseHyperParams)
 
-    model.to(args.model_device)
-    logger.info("Training/evaluation parameters %s", args)
+#     model.to(args.model_device)
+#     logger.info("Training/evaluation parameters %s", args)
     
-    os.makedirs(args.model_save_dir, exist_ok=True)
-    train(args, model)
+#     os.makedirs(args.model_save_dir, exist_ok=True)
+#     train(args, model)
     
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
 
 
 #--Functions below are the same as in original, just adapted for easier use in other scripts--#
  
 def run_training(
-    model: Contriever,
+    model,
     pembed_path: str,
     model_save_dir: str,
     log_dir: str,
     preprocess_dir: str,
     model_gpu_index: int = 0,
     faiss_gpu_index: list = None,
-    faiss_omp_num_threads: int = 32,
+    faiss_omp_num_threads: int = 8,
     metric_cut: int = None,
-    neg_topk: int = 200,
+    neg_topk: int = 100,
     max_seq_length: int = 64,
-    per_gpu_batch_size: int = 32,
-    gradient_accumulation_steps: int = 1,
-    warmup_steps: int = 2000,
+    per_gpu_batch_size: int = 16,
+    gradient_accumulation_steps: int = 2,
+    warmup_steps: int = 1000,
     seed: int = 42,
     save_steps: int = 5000000,
     logging_steps: int = 100,
@@ -367,6 +365,9 @@ def run_training(
     # Setup CUDA, GPU
     model_device = torch.device(f"cuda:{model_gpu_index}")
     n_gpu = torch.cuda.device_count()
+    
+    # Add check for log_dir
+    os.makedirs(log_dir, exist_ok=True)
 
     # Setup logging
     logger.warning("Model Device: %s, n_gpu: %s", model_device, n_gpu)
