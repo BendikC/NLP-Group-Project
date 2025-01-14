@@ -3,7 +3,7 @@ import matplotlib.ticker as mticker
 from typing import List
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.translate.meteor_score import meteor_score
-from scoring_metrics import ScoringMetrics
+from pipeline_components.scoring_metrics import ScoringMetrics
 
 
 class ScoringMetricsVisualization:

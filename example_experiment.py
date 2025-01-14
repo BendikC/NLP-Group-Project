@@ -15,6 +15,8 @@ import pandas as pd
 
 from pipeline_components.information_retrieval import Retriever
 from pipeline_components.generate_answer import AnswerGenerator
+from pipeline_components.scoring_metrics import ScoringMetrics
+from pipeline_components.scoring_metrics_viz import ScoringMetricsVisualization
 
 from torch import Tensor
 from typing import List,Dict
@@ -24,6 +26,7 @@ TOP_K = 5
 
 if __name__=="__main__":
         question_df = {"questions":[],"answers":[], "correct_answers":[]}
+        metrics_df = {}
 
         retriever = Retriever()
         queries = retriever.queries
@@ -34,8 +37,6 @@ if __name__=="__main__":
         # retrieve a dictionary of top k relevant contexts per question
         top_k_per_question = retriever.retrieve_relevant_contexts_contriever(queries, TOP_K)
 
-        matches = 0
-        mismatches = 0
         current_query_id = None
 
         for sample in tqdm(base_dataset.raw_data, desc="Processing samples"):
@@ -59,15 +60,31 @@ if __name__=="__main__":
                 question_df["questions"].append(query_text)
                 question_df["answers"].append(final_answer)
                 question_df["correct_answers"].append(answer.text())
+                break
 
-                if "[Final Answer]:" not in final_answer and answer.text().strip().lower() in final_answer.strip().lower():
-                        matches += 1
-                else:
-                        mismatches += 1
-                
+        
+        answers = question_df["answers"]
+        correct_answers = question_df["correct_answers"]
+        metrics = {
+            "Exact Match Score": (ScoringMetrics.exact_match, ScoringMetricsVisualization.plot_exact_match),
+            "Cover Exact Match Score": (ScoringMetrics.cover_exact_match, ScoringMetricsVisualization.plot_cover_exact_match),
+            "F1 Score": (ScoringMetrics.f1_score, ScoringMetricsVisualization.plot_f1_score),
+            "BLEU Score": (ScoringMetrics.bleu, ScoringMetricsVisualization.plot_bleu),
+            "METEOR Score": (ScoringMetrics.meteor, ScoringMetricsVisualization.plot_meteor),
+        }
+
+        for metric_name, metric_functions in metrics.items():
+                metric_function, metric_viz = metric_functions
+                score = metric_function(answers, correct_answers)
+                metrics_df[f'{metric_name}'] = [score]
+                print(f"{metric_name}: {score}")
+
         final_questions = pd.DataFrame(question_df)
-        print("EM", matches/(matches+mismatches))
         final_questions.to_csv("final_questions.csv")
+
+        metrics_df = pd.DataFrame(metrics_df)
+        metrics_df.to_csv("metrics.csv")
+        print("Done!")
                 
 
         
