@@ -29,9 +29,10 @@ class ExperimentType(Enum):
 
 
 class Experiment:
-    def __init__(self, experiment_type=ExperimentType.RELEVANT_CONTEXTS, TOP_K=5):
+    def __init__(self, experiment_type=ExperimentType.RELEVANT_CONTEXTS, TOP_K=10, NOISE_RATIO=0.2):
         # Define the number of contexts to retrieve for each query
         self.TOP_K = TOP_K
+        self.NOISE_RATIO = NOISE_RATIO
 
         # Initializing retriever and getting queries + dataset
         self.retriever = Retriever()
@@ -56,16 +57,53 @@ class Experiment:
         """
         if experiment_type == ExperimentType.RELEVANT_CONTEXTS:
             return self.retriever.retrieve_relevant_contexts_contriever(self.queries, self.TOP_K)
+        
         elif experiment_type == ExperimentType.ORACLE_CONTEXTS:
             return self.retriever.retrieve_oracle_contexts(self.queries, self.TOP_K)
+        
         elif experiment_type == ExperimentType.RANDOM_CONTEXTS:
-            return self.retriever.retrieve_random_contexts(self.queries, self.TOP_K)
+            # We inject noise based on number of retrieved times the noise ratio
+            num_of_random = int(self.TOP_K * self.NOISE_RATIO)
+            random_contexts = self.retriever.retrieve_random_contexts(self.queries, num_of_random, self.TOP_K)
+
+            relevant_contexts = self.retriever.retrieve_relevant_contexts_contriever(self.queries, self.TOP_K)
+            return self.inject_noisy_contexts(relevant_contexts, random_contexts)
+        
         elif experiment_type == ExperimentType.HARD_NEGATIVE_CONTEXTS:
-            return self.retriever.retrieve_hard_negative_contexts_contriever(self.queries, self.TOP_K)
+            # We inject noise based on number of retrieved times the noise ratio
+            num_of_hard_negatives = int(self.TOP_K * self.NOISE_RATIO)
+            hard_negatives = self.retriever.retrieve_hard_negative_contexts_contriever(self.queries, num_of_hard_negatives)
+
+            relevant_contexts = self.retriever.retrieve_relevant_contexts_contriever(self.queries, self.TOP_K)
+            return self.inject_noisy_contexts(relevant_contexts, hard_negatives)
+        
         elif experiment_type == ExperimentType.ADORE_CONTEXTS:
             ## TODO Implement the adore logic here, for now just return an empty list
             return {}
         
+    def inject_noisy_contexts(self, relevant_contexts: Dict[str, List[str]],
+                               noise_contexts: Dict[str, List[str]]) -> Dict[str, List[str]]:
+        """
+        Injects the noisy contexts into the retrieved relevant ones. This can 
+        be either the random contexts or the hard negatives.
+
+        Args:
+            relevant_contexts (Dict[str, List[str]]): The relevant contexts as a dict of lists of string per query
+            noise_contexts (Dict[str, List[str]]): The contexts to add
+        Returns:
+            Dict[str, List[str]]: A dictionary containing the list of contexts for each query ID
+        """
+        resulting_contexts = {}
+        
+        for query_id, relevant_contexts in relevant_contexts.items():
+            # Get the noise contexts from the other dictionary, slicing to correct amount
+            noise_to_add = noise_contexts[query_id]
+            # Add the noise to the relevant contexts
+            new_contexts = relevant_contexts + noise_to_add
+            resulting_contexts[query_id] = new_contexts
+
+        return resulting_contexts
+         
     def run_experiment(self, test_mode=False):
         """
         Runs the experiment, generating answers for each question and evaluating the performance of the model.
