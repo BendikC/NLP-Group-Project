@@ -116,6 +116,8 @@ def train(args, model):
     tb_writer = SummaryWriter(os.path.join(args.log_dir, 
         time.strftime("%b-%d_%H-%M-%S", time.localtime())))
 
+    passage_embeddings, _ = load_encoded_corpus(for_train=True)
+    
     args.train_batch_size = args.per_gpu_batch_size
     train_dataset = TrainQueryDataset(
         TextTokenIdsCache(args.preprocess_dir, "train-query"),
@@ -139,7 +141,7 @@ def train(args, model):
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps,
         num_training_steps=t_total)
 
-    index = load_encoded_corpus()
+    index = load_index(passage_embeddings, args.faiss_gpu_index)
 
     # Train!
     logger.info("***** Running training *****")
