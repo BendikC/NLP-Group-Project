@@ -34,8 +34,7 @@ class Retriever:
                 dataset="wikimultihopqa",
                 passage_dataset="wiki-musiqueqa-corpus",
                 config_path=config_path,
-                split=Split.DEV,
-                tokenizer=None
+                split=Split.DEV
             )
 
             # Load corpus
@@ -215,21 +214,6 @@ class Retriever:
         
         # Retrieve oracle contexts
         oracle_contexts = self.retrieve_oracle_contexts(queries, top_k)
-
-        # Initialize retriever
-        retriever = FunkyContriever(DenseHyperParams(
-            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
-            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
-        ))
-
-        # Perform retrieval for the query
-        retrieval_results = retriever.retrieve(
-            corpus=self.corpus,
-            queries=queries,
-            top_k=top_k,
-            score_function=CosineSimilarity(),
-            return_sorted=True
-        )
         
         # Create the not_relevant_mapping
         not_relevant_mapping = {}
