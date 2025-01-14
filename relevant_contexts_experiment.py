@@ -73,9 +73,14 @@ if __name__=="__main__":
             "METEOR Score": (ScoringMetrics.meteor, ScoringMetricsVisualization.plot_meteor),
         }
 
+        plot_output_folder = "plots"
+        if not os.path.exists(plot_output_folder):
+                os.makedirs(plot_output_folder)
+
         for metric_name, metric_functions in metrics.items():
                 metric_function, metric_viz = metric_functions
                 score = metric_function(answers, correct_answers)
+                metric_viz(answers, correct_answers, save_path=os.path.join(plot_output_folder, f"{metric_name}.png"))
                 metrics_df[f'{metric_name}'] = [score]
                 print(f"{metric_name}: {score}")
 
