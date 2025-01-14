@@ -1,9 +1,9 @@
 from dexter.config.constants import Split
 from dexter.data.loaders.RetrieverDataset import RetrieverDataset
 from dexter.utils.metrics.SimilarityMatch import CosineSimilarity
-from dexter.retriever.dense.Contriever import Contriever
 from dexter.data.datastructures.hyperparameters.dpr import DenseHyperParams
 from dexter.data.datastructures.question import Question
+from pipeline_components.funky_contriever import FunkyContriever
 from configparser import ConfigParser
 from typing import List, Optional, Dict
 import numpy as np
@@ -66,15 +66,15 @@ class Retriever:
         if k <= 0:
             raise ValueError("The number of top-k documents must be a positive integer.")
         
-        # Initialize retriever if not cached yet
-        if self.retriever == None:
-            self.retriever = Contriever(DenseHyperParams(
-                query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
-                document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
-            ))
+        # Initialize retriever
+        retriever = FunkyContriever(DenseHyperParams(
+            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
+            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
+        ))
 
         # Perform retrieval for the query
-        retrieval_results = self.retriever.retrieve(
+        print("Retrieving relevant contexts")
+        retrieval_results = retriever.retrieve(
             corpus=self.corpus,
             queries=queries,
             top_k=k,
@@ -215,6 +215,21 @@ class Retriever:
         
         # Retrieve oracle contexts
         oracle_contexts = self.retrieve_oracle_contexts(queries, top_k)
+
+        # Initialize retriever
+        retriever = FunkyContriever(DenseHyperParams(
+            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
+            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
+        ))
+
+        # Perform retrieval for the query
+        retrieval_results = retriever.retrieve(
+            corpus=self.corpus,
+            queries=queries,
+            top_k=top_k,
+            score_function=CosineSimilarity(),
+            return_sorted=True
+        )
         
         # Create the not_relevant_mapping
         not_relevant_mapping = {}

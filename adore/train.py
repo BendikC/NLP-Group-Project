@@ -12,11 +12,11 @@ import numpy as np
 from tqdm import tqdm, trange
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader, RandomSampler
-from transformers import (AdamW, get_linear_schedule_with_warmup,
-    RobertaConfig)
+from transformers import (AdamW, get_linear_schedule_with_warmup)
 
 from dataset import TextTokenIdsCache, SequenceDataset, load_rel, pack_tensor_2D
-from model import RobertaDot
+from dexter.retriever.dense.Contriever import Contriever
+from dexter.data.datastructures.hyperparameters.dpr import DenseHyperParams
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format = '%(asctime)s-%(levelname)s-%(name)s- %(message)s',
@@ -256,7 +256,6 @@ def train(args, model):
 def run_parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--metric_cut", type=int, default=None)
-    parser.add_argument("--init_path", type=str, required=True)
     parser.add_argument("--pembed_path", type=str, required=True)
     parser.add_argument("--model_save_dir", type=str, required=True)
     parser.add_argument("--log_dir", type=str, required=True)
@@ -298,9 +297,8 @@ def main():
     # Set seed
     set_seed(args)
 
-    logger.info(f"load from {args.init_path}")
-    config = RobertaConfig.from_pretrained(args.init_path)
-    model = RobertaDot.from_pretrained(args.init_path, config=config)
+    # Initialize Contriever model
+    model = Contriever(DenseHyperParams)
 
     model.to(args.model_device)
     logger.info("Training/evaluation parameters %s", args)
@@ -315,7 +313,7 @@ if __name__ == "__main__":
 #--Functions below are the same as in original, just adapted for easier use in other scripts--#
  
 def run_training(
-    init_path: str,
+    model: Contriever,
     pembed_path: str,
     model_save_dir: str,
     log_dir: str,
@@ -342,7 +340,7 @@ def run_training(
     for easier use in other scripts.
 
     Args:
-        init_path: Path to initialize model from
+        model: Contriever model used as the base model for training
         pembed_path: Path to passage embeddings
         model_save_dir: Directory to save model checkpoints
         log_dir: Directory to save training logs
@@ -375,7 +373,6 @@ def run_training(
 
     # Create args object to maintain compatibility with existing code
     args = argparse.Namespace(
-        init_path=init_path,
         pembed_path=pembed_path,
         model_save_dir=model_save_dir,
         log_dir=log_dir,
@@ -407,15 +404,8 @@ def run_training(
     # Set seed
     set_seed(args)
 
-    logger.info(f"load from {init_path}")
-    config = RobertaConfig.from_pretrained(init_path)
-    model = RobertaDot.from_pretrained(init_path, config=config)
-
     model.to(model_device)
     logger.info("Training/evaluation parameters %s", args)
     
     os.makedirs(model_save_dir, exist_ok=True)
     train(args, model)
-    
-
-

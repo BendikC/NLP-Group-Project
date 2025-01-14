@@ -20,43 +20,38 @@ class AnswerGenerator:
     response = answer_generator.generate_answer_with_llm(len(short_prompt.split()), short_prompt)
     """
 
-    def __init__(self, tiny_version: bool = False):
+    def __init__(self, no_print: bool = False):
         """
         Initializes the LLMs and their configurations for short and medium contexts.
         """
         # Define LLM configurations for short and medium contexts
         self.short_context_models = [
-            {"name": "meta-llama/Llama-3.1-405B-Instruct", "max_tokens": 5000},
+            {"name": "gpt-4o-mini", "max_tokens": 5000},
         ]
         self.medium_context_models = [
-            {"name": "meta-llama/Llama-3.1-8B-Instruct", "max_tokens": 25000},
-        ]
-        self.long_context_models = [
-            {"name": "starsy/Llama-3-70B-Instruct-Gradient-262k-AWQ", "max_tokens": 200000},
-        ]
-        self.tiny_context_models = [
-            {"name": "meta-llama/Llama-2-7b-chat-hf", "max_tokens": 1000},
+            {"name": "gpt-4o", "max_tokens": 10000},
         ]
 
         self.models = {}  # Dictionary to store initialized pipelines
-        self.initialize_models(tiny_version=tiny_version)
+        self.no_print = no_print
+        self.initialize_models()
 
-    def initialize_models(self, tiny_version: bool = False):
+    def initialize_models(self):
         """
         Initializes instances for all configured models.
         """
         # Use LLMEngineOrchestrator for initialization
         config_instance = LLMEngineOrchestrator()
             
-        models = self.tiny_context_models if tiny_version else self.short_context_models + self.medium_context_models + self.long_context_models
+        models = self.short_context_models + self.medium_context_models
         
         for model_config in models:
             model_name = model_config["name"]
-            print(f"Loading model: {model_name}...")
+            print(f"Loading model: {model_name}...") if not self.no_print else None
             
             llm_instance = config_instance.get_llm_engine(
                 data="",
-                llm_class="llama",  # Adjust based on the engine used
+                llm_class="openai",  # Adjust based on the engine used
                 model_name=model_name,
             )
             self.models[model_name] = llm_instance
@@ -85,7 +80,7 @@ class AnswerGenerator:
             float: Simulated hallucination index (lower is better).
         """
         #TODO: Simulated evaluation logic; replace with actual metrics if available
-        print(f"Evaluating model {model_name} for hallucination...")
+        print(f"Evaluating model {model_name} for hallucination...") if not self.no_print else None
         hallucination_index = 0.05  # Simulate low hallucination index for now
         return hallucination_index
 
@@ -103,10 +98,8 @@ class AnswerGenerator:
         """
         if context_length <= 5000:
             candidates = self.short_context_models
-        elif context_length <= 25000:
-            candidates = self.medium_context_models
         else:
-            candidates = self.long_context_models
+            candidates = self.medium_context_models
         
 
         # Evaluate all candidates and select the best based on hallucination index
@@ -120,7 +113,7 @@ class AnswerGenerator:
                 best_model = model_name
                 best_score = hallucination_index
 
-        print(f"Selected best model: {best_model} with hallucination index: {best_score}")
+        print(f"Selected best model: {best_model} with hallucination index: {best_score}") if not self.no_print else None
         return best_model
 
     def generate_answer_with_llm(self, context_length: int, query: str, context: str) -> str:

@@ -12,6 +12,7 @@ Setting up the project:
 - huggingface_token=[insert huggingace token] 
 - OPENAI_KEY=[key here]
 
-5. Now you should be able to run ``` python dexter-experiment.py ```. One issue that I encountered is having the wrong hugginface_hub version installed, make sure this matches the version specified in the environment.yml (0.21.0). If you already installed huggingface_hub, reinstall with this specific version to make it work.
+5. Run `python corpus_management/encode_corpus.py` to encode the corpus into dense embeddings. This process will take a while (potentially several hours depending on your hardware) and will save the embedded corpus as a memmap file in data/embeddings. This step is necessary for efficient retrieval later.
 
+6. Run experiment and hope for the best.
 
