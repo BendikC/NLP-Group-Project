@@ -34,7 +34,8 @@ class Retriever:
                 dataset="wikimultihopqa",
                 passage_dataset="wiki-musiqueqa-corpus",
                 config_path=config_path,
-                split=Split.DEV
+                split=Split.DEV,
+                tokenizer=None
             )
 
             # Load corpus
@@ -43,6 +44,9 @@ class Retriever:
 
         # Convert corpus to a mapping from indices to documents for easy retrieval
         self.corpus_mapping = {doc.id(): doc.text() for doc in self.corpus}
+
+        # Initialize retriever for caching
+        self.retriever = None
     
     def retrieve_relevant_contexts_contriever(self, queries: List[Question], k: int) -> dict[str, List[str]]:
         """
@@ -88,19 +92,61 @@ class Retriever:
 
         return query_to_documents
     
-    def retrieve_hard_negative_contexts_contriever(self, query: str, k: int) -> str:
+    def retrieve_hard_negative_contexts_contriever(self, queries: List[Question], k: int) -> dict[str, List[str]]:
         """
+        Given a list of queries, find the top-k hard negative contexts. 
+        Hard negatives are documents that are related and close to the query in the vector space but do not help answer the question.
+        
         Using our query and imported Contriever model, sample k hard negative contexts.
         These are the highest-ranked documents that aren't in the ground truth for a query.
 
         Args:
-            query (str): String containing the input query
-            k (int): Amount of top-k hard-negative documents to return
+            queries (List[Question]: List of input queries as Question objects.
+            k (int): Amount of top-k hard-negative documents to return.
 
         Returns:
-            str?: K hard negative documents from the dataset
+            Dict[str, List[str]]: A dictionary mapping query IDs to lists of the most k relevant documents in order of relevance.
         """
-        pass
+        if not queries or any(not query for query in queries):
+            raise ValueError("Queries must be a non-empty list of non-empty strings.")
+        
+        if k <= 0:
+            raise ValueError("The number of top-k documents must be a positive integer.")
+        
+        # Retrieve all oracle contexts for each query (k is set to arbitrarily large number to ensure all oracle contexts are
+        # retrieved)
+        oracle_contexts = self.retrieve_oracle_contexts(queries, 1000)
+
+        # Determine the maximum number of oracle contexts across all queries
+        max_oracle_count = max(len(contexts) for contexts in oracle_contexts.values())
+
+        # Retrieve (max_oracle_count + k) contriever-relevant contexts for each query
+        relevant_contexts = self.retrieve_relevant_contexts_contriever(queries, max_oracle_count + k)
+
+        # Prepare hard negatives by excluding oracle contexts from relevant contexts
+        hard_negatives = {}
+
+        for query in queries:
+            query_id = str(query.id())
+
+            if query_id not in relevant_contexts:
+                hard_negatives[query_id] = []  # No relevant contexts available
+                continue
+
+            # Contriever-relevant contexts for the query
+            contriever_relevant_docs = relevant_contexts[query_id]
+
+            # Oracle contexts for the query
+            oracle_docs = set(oracle_contexts.get(query_id, []))
+
+            # Exclude oracle contexts from relevant contexts
+            non_oracle_docs = [doc for doc in contriever_relevant_docs if doc not in oracle_docs]
+
+            # Take the top-k non-oracle documents
+            hard_negatives[query_id] = non_oracle_docs[:k]
+
+        return hard_negatives
+
 
     def retrieve_oracle_contexts(self, queries: List[Question], k: int) -> dict[str, List[str]]:
         """
@@ -164,6 +210,12 @@ class Retriever:
         if k > len(self.corpus_mapping):
             raise ValueError(f"The number of requested contexts exceeds the corpus size ({len(self.corpus_mapping)}).")
         
+        # Retrieve relevant contexts
+        relevant_contexts = self.retrieve_relevant_contexts_contriever(queries, top_k)
+        
+        # Retrieve oracle contexts
+        oracle_contexts = self.retrieve_oracle_contexts(queries, top_k)
+
         # Initialize retriever
         retriever = FunkyContriever(DenseHyperParams(
             query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
@@ -181,29 +233,28 @@ class Retriever:
         
         # Create the not_relevant_mapping
         not_relevant_mapping = {}
+        
         for query in queries:
             query_id = str(query.id())  # Ensure question ID is in string format
 
-            # Get the relevant document IDs for the query
-            relevant_doc_ids = set(retrieval_results[query_id].keys())
-
-            # Identify non-relevant document IDs
-            non_relevant_doc_ids = set(self.corpus_mapping.keys()) - relevant_doc_ids
-
-            # Map the non-relevant document IDs to their text content
-            not_relevant_mapping[query_id] = [
-                self.corpus_mapping[doc_id]
-                for doc_id in non_relevant_doc_ids if doc_id in self.corpus_mapping
-            ]
-
-        # Randomly sample k document IDs from the non-relevant documents for each query
-        random_contexts = {}
-        for query_id, non_relevant_docs in not_relevant_mapping.items():
-            if len(non_relevant_docs) < k:
-                raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
+            # Get relevant and oracle contexts for the query
+            relevant_docs = set(relevant_contexts.get(query_id, []))
+            oracle_docs = set(oracle_contexts.get(query_id, []))
             
-            random_docs = np.random.choice(non_relevant_docs, size=k, replace=False)
-            random_contexts[query_id] = random_docs.tolist()
+            # Combine relevant and oracle contexts
+            excluded_docs = relevant_docs.union(oracle_docs)
 
-        return random_contexts
+            # Identify remaining documents that can be sampled
+            remaining_docs = [
+                doc for doc_id, doc in self.corpus_mapping.items() if doc_id not in excluded_docs
+            ]
+            
+            if len(remaining_docs) < k:
+                raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
+        
+            # Randomly sample k documents from the remaining pool
+            sampled_docs = np.random.choice(remaining_docs, size=k, replace=False)
+            not_relevant_mapping[query_id] = sampled_docs.tolist()
+
+        return not_relevant_mapping
     
