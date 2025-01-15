@@ -1,18 +1,26 @@
 name: nlp-project
 channels:
   - conda-forge
-dependencies:
-  - python=3.9
   - pytorch
-  - faiss
+  - nvidia
+dependencies:
+  - python=3.11
   - pip
+  - pytorch
+  - pytorch-cuda=12.1
+  - faiss-gpu
+  - tokenizers>=0.19.0,<0.20.0
+  - transformers>=4.36.0
+  - sentence-transformers>=2.3.0 
+  - huggingface_hub=0.21.0
+  - accelerate
+  - scikit-learn
+  - pandas
+  - tqdm
+  - tensorboard
   - pip:
-      - transformers
-      - accelerate
-      - sentence-transformers
-      - scikit-learn
-      - numpy
-      - pandas
-      - tqdm
-      - tensorboard
-      - huggingface_hub==21.0
+    - numpy
+    - dexter-cqa
+    - python-dotenv
+    - matplotlib
+    - nltk
