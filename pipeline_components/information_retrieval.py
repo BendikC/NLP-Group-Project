@@ -218,6 +218,8 @@ class Retriever:
         # Create the not_relevant_mapping
         not_relevant_mapping = {}
         
+        corpus_ids = set(self.corpus_mapping.keys())
+
         for query in queries:
             query_id = str(query.id())  # Ensure question ID is in string format
 
@@ -228,17 +230,16 @@ class Retriever:
             # Combine relevant and oracle contexts
             excluded_docs = relevant_docs.union(oracle_docs)
 
-            # Identify remaining documents that can be sampled
-            remaining_docs = [
-                doc for doc_id, doc in self.corpus_mapping.items() if doc_id not in excluded_docs
-            ]
-            
-            if len(remaining_docs) < k:
+            # Identify remaining document IDs that can be sampled
+            remaining_doc_ids = list(corpus_ids - excluded_docs)
+
+            if len(remaining_doc_ids) < k:
                 raise ValueError(f"Not enough non-relevant documents to sample {k} for query {query_id}.")
         
-            # Randomly sample k documents from the remaining pool
-            sampled_docs = np.random.choice(remaining_docs, size=k, replace=False)
-            not_relevant_mapping[query_id] = sampled_docs.tolist()
+            # Randomly sample k document IDs from the remaining pool
+            sampled_doc_ids = np.random.choice(remaining_doc_ids, size=k, replace=False)
+            sampled_docs = [self.corpus_mapping[doc_id] for doc_id in sampled_doc_ids]
+            not_relevant_mapping[query_id] = sampled_docs
 
         return not_relevant_mapping
     
