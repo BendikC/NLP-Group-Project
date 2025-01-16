@@ -7,7 +7,7 @@ from torch import nn
 import transformers
 
 from transformers.models.roberta.modeling_roberta import RobertaPreTrainedModel
-from transformers import RobertaModel
+from transformers import RobertaModel, AutoModel, PreTrainedModel
 import torch.nn.functional as F
 from torch.cuda.amp import autocast
 
@@ -94,6 +94,22 @@ class RobertaDot(BaseModelDot, RobertaPreTrainedModel):
         outputs1 = self.roberta(input_ids=input_ids,
                                 attention_mask=attention_mask)
         return outputs1
+
+
+# class ContrieverDot(BaseModelDot, PreTrainedModel):
+#     def __init__(self,):
+#         self.contriever = AutoModel.from_pretrained('facebook/contriever')
+        
+#         self.output_embedding_size = config.hidden_size
+#         print("output_embedding_size", self.output_embedding_size)
+#         self.embeddingHead = nn.Linear(config.hidden_size, self.output_embedding_size)
+#         self.norm = nn.LayerNorm(self.output_embedding_size)
+#         self.apply(self._init_weights)
+
+#     def _text_encode(self, input_ids, attention_mask):
+#         outputs1 = self.contriever(input_ids=input_ids,
+#                                 attention_mask=attention_mask)
+#         return outputs1
 
 
 class RobertaDot_InBatch(RobertaDot):

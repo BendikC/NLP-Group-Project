@@ -166,10 +166,12 @@ def train(args, model):
 
             batch = {k:v.to(args.model_device) for k, v in batch.items()}
             model.train()            
-            query_embeddings = model(
+            model_output = model(
                 input_ids=batch["input_ids"],
                 attention_mask=batch["attention_mask"], 
-                is_query=True)
+            )
+            
+            query_embeddings = model_output.pooler_output
             I_nearest_neighbor = index.search(
                     query_embeddings.detach().cpu().numpy(), args.neg_topk)[1]
             
