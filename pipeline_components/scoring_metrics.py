@@ -24,7 +24,7 @@ class ScoringMetrics:
             float: Exact Match score as a proportion of matches.
         """
         # Count the number of exact matches between predictions and truths
-        matches = sum(1 for pred, truth in zip(predictions, truths) if pred == truth)
+        matches = sum(1 for pred, truth in zip(predictions, truths) if pred.lower() == truth.lower())
         # Return the proportion of exact matches
         return matches / len(truths) if truths else 0.0
 
@@ -48,7 +48,7 @@ class ScoringMetrics:
         # Count the number of predictions that contain the truth as a substring
         matches = sum(
             1 for pred, truth in zip(predictions, truths)
-            if all(token in wordpunct_tokenize(pred) for token in wordpunct_tokenize(truth))
+            if all(token in wordpunct_tokenize(pred.lower()) for token in wordpunct_tokenize(truth.lower()))
         )
 
         # Return the proportion of matches
@@ -91,7 +91,7 @@ class ScoringMetrics:
             float: Average BLEU score across all sentence pairs.
         """
          # Compute BLEU score using sacrebleu
-        bleu_score = sacrebleu.corpus_bleu(predictions, [truths])
+        bleu_score = sacrebleu.corpus_bleu(predictions, [truths], lowercase=True)
         return bleu_score.score / 100  # sacrebleu returns BLEU in percentage
 
     @staticmethod
@@ -111,7 +111,7 @@ class ScoringMetrics:
         ScoringMetrics._ensure_nltk_resources()
 
         scores = [
-            meteor_score([truth.split()], pred.split())
+            meteor_score([truth.lower().split()], pred.lower().split())
             for pred, truth in zip(predictions, truths)
         ]
         return sum(scores) / len(scores) if scores else 0.0
