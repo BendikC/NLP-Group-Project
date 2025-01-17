@@ -1,6 +1,5 @@
 from dexter.llms.llm_engine_orchestrator import LLMEngineOrchestrator
-from transformers import AutoTokenizer, pipeline
-import torch
+import string
 
 class AnswerGenerator:
     """
@@ -154,7 +153,7 @@ class AnswerGenerator:
             if "not possible" in response.lower() or "unknown" in response.lower():
                 return "[Final Answer]: Unable to provide an answer with the given context."
             elif "[Final Answer]:" in response:
-                return response.split("[Final Answer]:", 1)[1].strip()
+                return self._normalize_answer(response.split("[Final Answer]:", 1)[1])
             else:
                 return "[Final Answer]: Could not parse a valid answer."
         except Exception as e:
@@ -175,4 +174,16 @@ class AnswerGenerator:
         # except Exception as e:
         #     print(f"Error generating answer with model {best_model_name}: {e}")
         #     return "An error occurred while generating the answer."
+
+    def _normalize_answer(self, answer: str) -> str:
+        """
+        Normalize answer by removing trailing punctuation and preceding or trailing whitespace.
+
+        Args:
+            text (str): The input answer to be normalized.
+
+        Returns:
+            str: The normalized answer.
+        """
+        return answer.strip().rstrip(string.punctuation)
         
