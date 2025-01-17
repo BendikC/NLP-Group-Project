@@ -1,7 +1,8 @@
 from typing import List
 from nltk import download
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from nltk.translate.meteor_score import meteor_score
+from nltk.tokenize import wordpunct_tokenize
+import sacrebleu
 
 class ScoringMetrics:
     """
@@ -23,15 +24,16 @@ class ScoringMetrics:
             float: Exact Match score as a proportion of matches.
         """
         # Count the number of exact matches between predictions and truths
-        matches = sum(1 for pred, truth in zip(predictions, truths) if pred == truth)
+        matches = sum(1 for pred, truth in zip(predictions, truths) if pred.lower() == truth.lower())
         # Return the proportion of exact matches
         return matches / len(truths) if truths else 0.0
 
     @staticmethod
     def cover_exact_match(predictions: List[str], truths: List[str]) -> float:
         """
-        Computes the Cover Exact Match (Cover-EM) score.
+        Computes the Cover Exact Match (Cover-EM) score with tokenization using NLTK.
         Cover-EM measures the proportion of predicted answers that contain the ground truth as a substring.
+        Tokens are used for comparison to account for different word forms and flexibility.
 
         Args:
             predictions (List[str]): List of predicted answers.
@@ -40,8 +42,15 @@ class ScoringMetrics:
         Returns:
             float: Cover Exact Match score as a proportion of matches.
         """
+        # Ensure NLTK resources are downloaded
+        ScoringMetrics._ensure_nltk_resources()
+
         # Count the number of predictions that contain the truth as a substring
-        matches = sum(1 for pred, truth in zip(predictions, truths) if truth in pred)
+        matches = sum(
+            1 for pred, truth in zip(predictions, truths)
+            if all(token in wordpunct_tokenize(pred.lower()) for token in wordpunct_tokenize(truth.lower()))
+        )
+
         # Return the proportion of matches
         return matches / len(truths) if truths else 0.0
 
@@ -71,7 +80,7 @@ class ScoringMetrics:
     @staticmethod
     def bleu(predictions: List[str], truths: List[str]) -> float:
         """
-        Computes the average BLEU score for each sentence pair.
+        Computes the average BLEU score for each sentence pair using sacrebleu.
         BLEU measures the similarity between a predicted sentence and a reference sentence using n-grams.
 
         Args:
@@ -81,16 +90,9 @@ class ScoringMetrics:
         Returns:
             float: Average BLEU score across all sentence pairs.
         """
-        # Use smoothing to handle cases with low n-gram overlap effectively
-        smoother = SmoothingFunction()
-
-        # Compute BLEU score for each prediction-truth pair
-        scores = [
-            sentence_bleu([truth.split()], pred.split(), smoothing_function=smoother.method1)
-            for pred, truth in zip(predictions, truths)
-        ]
-        
-        return sum(scores) / len(scores) if scores else 0.0
+         # Compute BLEU score using sacrebleu
+        bleu_score = sacrebleu.corpus_bleu(predictions, [truths], lowercase=True)
+        return bleu_score.score / 100  # sacrebleu returns BLEU in percentage
 
     @staticmethod
     def meteor(predictions: List[str], truths: List[str]) -> float:
@@ -109,7 +111,7 @@ class ScoringMetrics:
         ScoringMetrics._ensure_nltk_resources()
 
         scores = [
-            meteor_score([truth.split()], pred.split())
+            meteor_score([truth.lower().split()], pred.lower().split())
             for pred, truth in zip(predictions, truths)
         ]
         return sum(scores) / len(scores) if scores else 0.0

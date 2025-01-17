@@ -171,7 +171,6 @@ class Experiment:
         metrics = {
             "Exact Match Score": (ScoringMetrics.exact_match, ScoringMetricsVisualization.plot_exact_match),
             "Cover Exact Match Score": (ScoringMetrics.cover_exact_match, ScoringMetricsVisualization.plot_cover_exact_match),
-            "F1 Score": (ScoringMetrics.f1_score, ScoringMetricsVisualization.plot_f1_score),
             "BLEU Score": (ScoringMetrics.bleu, ScoringMetricsVisualization.plot_bleu),
             "METEOR Score": (ScoringMetrics.meteor, ScoringMetricsVisualization.plot_meteor),
         }
