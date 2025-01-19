@@ -13,7 +13,7 @@ class ScoringMetricsVisualization:
     """
 
     @staticmethod
-    def plot_exact_match(predictions: List[str], truths: List[str]):
+    def plot_exact_match(predictions: List[str], truths: List[str], save_path=None):
         """
         Plots the Exact Match (EM) score per data point as a histogram.
 
@@ -32,7 +32,7 @@ class ScoringMetricsVisualization:
         plt.xticks(ticks=[i * 0.1 for i in range(11)])
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-        plt.show()
+        plt.show() if save_path is None else plt.savefig(save_path)
 
     @staticmethod
     def __exact_match_per_point(predictions: List[str], truths: List[str]) -> List[float]:
@@ -50,7 +50,7 @@ class ScoringMetricsVisualization:
         return [1.0 if pred == truth else 0.0 for pred, truth in zip(predictions, truths)]
 
     @staticmethod
-    def plot_cover_exact_match(predictions: List[str], truths: List[str]):
+    def plot_cover_exact_match(predictions: List[str], truths: List[str], save_path=None):
         """
         Plots the Cover Exact Match (cover-EM) score per data point as a histogram.
 
@@ -69,7 +69,7 @@ class ScoringMetricsVisualization:
         plt.xticks(ticks=[i * 0.1 for i in range(11)])
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-        plt.show()
+        plt.show() if save_path is None else plt.savefig(save_path)
 
     @staticmethod
     def __cover_exact_match_per_point(predictions: List[str], truths: List[str]) -> List[float]:
@@ -87,7 +87,7 @@ class ScoringMetricsVisualization:
         return [1.0 if truth in pred else 0.0 for pred, truth in zip(predictions, truths)]
 
     @staticmethod
-    def plot_f1_score(predictions: List[str], truths: List[str]):
+    def plot_f1_score(predictions: List[str], truths: List[str], save_path=None):
         """
         Plots the F1 score per data point as a histogram.
 
@@ -106,7 +106,7 @@ class ScoringMetricsVisualization:
         plt.xticks(ticks=[i * 0.1 for i in range(11)])
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-        plt.show()
+        plt.show() if save_path is None else plt.savefig(save_path)
 
     @staticmethod
     def __f1_score_per_point(predictions: List[str], truths: List[str]) -> List[float]:
@@ -137,7 +137,7 @@ class ScoringMetricsVisualization:
         return scores
 
     @staticmethod
-    def plot_bleu(predictions: List[str], truths: List[str]):
+    def plot_bleu(predictions: List[str], truths: List[str], save_path=None):
         """
         Plots the BLEU score per data point as a histogram.
 
@@ -156,7 +156,7 @@ class ScoringMetricsVisualization:
         plt.xticks(ticks=[i * 0.1 for i in range(11)])
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-        plt.show()
+        plt.show() if save_path is None else plt.savefig(save_path)
 
     @staticmethod
     def __bleu_per_point(predictions: List[str], truths: List[str]) -> List[float]:
@@ -178,7 +178,7 @@ class ScoringMetricsVisualization:
                 for pred, truth in zip(predictions, truths)]
 
     @staticmethod
-    def plot_meteor(predictions: List[str], truths: List[str]):
+    def plot_meteor(predictions: List[str], truths: List[str], save_path=None):
         """
         Plots the METEOR score per data point as a histogram.
 
@@ -197,7 +197,7 @@ class ScoringMetricsVisualization:
         plt.xticks(ticks=[i * 0.1 for i in range(11)])
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         plt.gca().yaxis.set_major_locator(mticker.MaxNLocator(integer=True))
-        plt.show()
+        plt.show() if save_path is None else plt.savefig(save_path)
 
     @staticmethod
     def __meteor_per_point(predictions: List[str], truths: List[str]) -> List[float]:
