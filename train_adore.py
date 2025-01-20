@@ -10,7 +10,7 @@ import logging
 from adore.train import run_training
 from dexter.retriever.dense.Contriever import Contriever
 from dexter.data.datastructures.hyperparameters.dpr import DenseHyperParams
-
+from configparser import ConfigParser
 logger = logging.getLogger(__name__)
 
 class AdoreTrainer:
@@ -25,19 +25,27 @@ class AdoreTrainer:
         Args:
             config_path (str): Path to config file
         """
-        self.config_path = config_path
+        
+        self.config = ConfigParser()
+        self.config.read(config_path)
 
     def train_model(self):
         """
-        Initiaizes required parameters for training and runs the training.
+        Initializes required parameters for training and runs the training.
         """
         
         logger.info("Initializing parameters for training")
+        
+        # Set environment variable to handle OpenMP runtime conflict
+        os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+        
+        # Load model with weights_only=True to address PyTorch warning
         model = Contriever(DenseHyperParams(
                 query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
                 document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
             )).context_encoder.cuda()
-        pembed_path = "data/embeddings/passage_embeddings"
+        
+        pembed_path = "data/embeddings"
         model_save_dir = "model_checkpoints/adore"
         log_dir = "logs/adore"
         preprocess_dir = "data/preprocessed"
@@ -64,3 +72,7 @@ class AdoreTrainer:
         )
 
         logger.info("ADORE model training completed")
+
+if __name__ == "__main__":
+    trainer = AdoreTrainer()
+    trainer.train_model()

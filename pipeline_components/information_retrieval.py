@@ -7,6 +7,7 @@ from pipeline_components.funky_contriever import FunkyContriever
 from configparser import ConfigParser
 from typing import List, Optional, Dict
 import numpy as np
+from pipeline_components.adore_contriever import AdoreContriever
 
 class Retriever:
     """
@@ -70,6 +71,52 @@ class Retriever:
             query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
             document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
         ))
+
+        # Perform retrieval for the query
+        print("Retrieving relevant contexts")
+        retrieval_results = retriever.retrieve(
+            corpus=self.corpus,
+            queries=queries,
+            top_k=k,
+            score_function=CosineSimilarity(),
+            return_sorted=True
+        )
+
+        # Map query IDs to the top-k relevant documents
+        query_to_documents = {}
+        for query_id, results in retrieval_results.items():
+            relevant_docs = [
+                self.corpus_mapping[doc_id] for doc_id in results.keys() if doc_id in self.corpus_mapping
+            ]
+            query_to_documents[query_id] = relevant_docs
+
+        return query_to_documents
+    
+    def retrieve_relevant_contexts_adore(self, queries: List[Question], k: int) -> dict[str, List[str]]:
+        """
+        Given queries, uses the ADORE fine-tuned Contriever model to compute query embeddings and find the documents in the 
+        context that most closely match this computed embedding.
+
+        Args:
+            queries (List[Question]: List of input queries as Question objects.
+            k (int): Amount of top-k ranked documents to return per query
+
+        Returns:    
+            Dict[str, List[str]]: A dictionary mapping query IDs to lists of the most k relevant documents in order of relevance.
+        """
+        if not queries or any(not query for query in queries):
+            raise ValueError("Queries must be a non-empty list of non-empty strings.")
+        
+        if k <= 0:
+            raise ValueError("The number of top-k documents must be a positive integer.")
+        
+        # Initialize retriever
+        contriever_config = DenseHyperParams(
+            query_encoder_path=self.config["Query-Encoder"].get("query_encoder_path"),
+            document_encoder_path=self.config["Document-Encoder"].get("document_encoder_path")
+        )
+        
+        retriever = AdoreContriever(contriever_config, "model_checkpoints/adore/epoch-6")
 
         # Perform retrieval for the query
         print("Retrieving relevant contexts")

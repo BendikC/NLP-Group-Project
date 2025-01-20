@@ -1,19 +1,21 @@
+from transformers import AutoModel
 from dexter.retriever.dense.HfRetriever import HfRetriever
-from dexter.data.datastructures.evidence import Evidence
-from typing import List
-import numpy as np
-import os
-import torch
-from corpus_management.encode_corpus import encode_corpus
-from dexter.data.datastructures.question import Question
-from dexter.utils.metrics.SimilarityMatch import SimilarityMetric
 from typing import Dict, List
 from corpus_management.load_corpus import load_encoded_corpus
+from dexter.data.datastructures.question import Question
+from dexter.data.datastructures.evidence import Evidence
+from dexter.utils.metrics.SimilarityMatch import SimilarityMetric
+from corpus_management.encode_corpus import encode_corpus
+import torch
 
-class FunkyContriever(HfRetriever):
-    def __init__(self, config=None):
+class AdoreContriever(HfRetriever):
+    def __init__(self, config, model_path: str):
         super().__init__(config)
-
+        self.question_encoder = AutoModel.from_pretrained(model_path)
+        if torch.cuda.is_available():
+            self.question_encoder.cuda()
+    
+    
     def load_index_if_available(self):
         """
         Override of HfRetriever's load_index_if_available to load pre-encoded corpus from memmap.

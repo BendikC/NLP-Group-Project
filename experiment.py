@@ -78,8 +78,8 @@ class Experiment:
             return self.inject_noisy_contexts(relevant_contexts, hard_negatives)
         
         elif experiment_type == ExperimentType.ADORE_CONTEXTS:
-            ## TODO Implement the adore logic here, for now just return an empty list
-            return {}
+            print("Gathering Adore experiment contexts...")
+            return self.retriever.retrieve_relevant_contexts_adore(self.queries, self.TOP_K)
         
     def inject_noisy_contexts(self, relevant_contexts: Dict[str, List[str]],
                                noise_contexts: Dict[str, List[str]]) -> Dict[str, List[str]]:
@@ -125,7 +125,8 @@ class Experiment:
                 # In dexter package, they defined a sample in the raw data per evidence and not per query, so we have 10 samples per query
                 # containing not only new evidence for each one, but the same question and answer 10 times :(
                 if current_query_id == query_id:
-                        continue
+                    print("Skipping query", query_id)
+                    continue
                 else:
                         current_query_id = query_id
 
