@@ -1,6 +1,6 @@
 # NLP-Group-Project
 
-Setting up the project:
+## Setting up the project:
 
 1. Download the data files and put them into the data/ directory, can be downloaded from here: https://drive.google.com/drive/folders/1qIZcNcU2wtiJNr3BUyX2GIUtnHEfbQDi?usp=sharing
 
@@ -14,5 +14,10 @@ Setting up the project:
 
 5. Run `python corpus_management/encode_corpus.py` to encode the corpus into dense embeddings. This process will take a while (potentially several hours depending on your hardware) and will save the embedded corpus as a memmap file in data/embeddings. This step is necessary for efficient retrieval later.
 
-6. Run experiment and hope for the best.
+## Training ADORE-Contreiver 
+This can take a while and you might need to configure the training parameters in `train_adore.py` based on your system's capabilities. You can first check with ``` python setup_analysis/check_gpu_availability.py ``` . Then once the parameters are configured apprpriately you can run ```python train_adore.py``` which will generate model weights for each of 6 epochs in `model_checkpoint/`.
+
+## Run Experiment to collect results
+Then in `relevant_contexts_experiment.py` choose the experiment you want and run the file with ``` python relevant_contexts_experiment.py```. This will generate results in `results/` when complete.
+
 
