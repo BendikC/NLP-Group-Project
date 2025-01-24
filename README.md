@@ -1,4 +1,5 @@
 # NLP-Group-Project
+This project is done as part of the DSAIT4090 Natural Language Processing course at TU Delft. It investigates how negatives and har negatives affect RAG performance. In both their inclusion in IR training and the input contexts for the LLM.
 
 ## Setting up the project:
 
